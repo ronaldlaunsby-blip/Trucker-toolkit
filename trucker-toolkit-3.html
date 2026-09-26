@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trucker Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blueprint: #10202e;
+    --panel: #16283a;
+    --panel-raised: #1c3247;
+    --line: #2c4359;
+    --cyan: #4FD1E8;
+    --cyan-dim: #1c5e6b;
+    --safety-orange: #E8542A;
+    --paper: #EAF1F5;
+    --muted: #7C93A6;
+    --green-on: #4CAF6D;
+    --amber: #E0A733;
+    --red: #E05252;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at top, #17293a 0%, var(--blueprint) 60%);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding: 18px 14px 60px;
+    background-image:
+      linear-gradient(rgba(79,209,232,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,209,232,0.035) 1px, transparent 1px),
+      radial-gradient(ellipse at top, #17293a 0%, var(--blueprint) 60%);
+    background-size: 26px 26px, 26px 26px, cover;
+  }
+  .rail{ max-width: 720px; margin: 0 auto; }
+
+  .dash{
+    background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .dash::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+  }
+  .dash-title{
+    font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:0.06em;
+    font-size: 22px; text-transform: uppercase; margin: 0;
+  }
+  .dash-sub{
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+    margin-top: 4px; letter-spacing: 0.04em;
+  }
+  .status-light{
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--green-on);
+    letter-spacing: 0.05em;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; background: var(--green-on); box-shadow: 0 0 8px var(--green-on); }
+
+  .grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .btn{
+    background: linear-gradient(180deg, var(--panel-raised) 0%, var(--panel) 100%);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px 12px; text-align:left; cursor:pointer; color: var(--paper);
+    position: relative; min-height: 92px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    transition: transform 0.08s ease, border-color 0.15s ease;
+  }
+  .btn:active{ transform: translateY(1px) scale(0.98); }
+  .btn:hover{ border-color: var(--cyan-dim); }
+  .btn .idx{
+    font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em;
+  }
+  .btn .label{
+    font-family:'Oswald', sans-serif; font-weight:600; font-size: 15.5px;
+    text-transform: uppercase; letter-spacing: 0.02em; margin-top: 10px;
+  }
+  .btn .glow{
+    position:absolute; top:12px; right:12px; width:7px; height:7px; border-radius:50%; background: var(--line);
+  }
+  .btn.has-data .glow{ background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+  .overlay{ display:none; position: fixed; inset:0; background: rgba(6,12,17,0.75); z-index: 50; padding: 18px 14px; overflow-y:auto; }
+  .overlay.open{ display:block; }
+  .sheet{ max-width: 680px; margin: 20px auto 40px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .sheet-head{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px; }
+  .sheet-title{ font-family:'Oswald', sans-serif; font-weight:700; text-transform: uppercase; letter-spacing:0.03em; font-size: 20px; margin:0; color: var(--cyan); }
+  .sheet-desc{ font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .close-x{ background:none; border:none; color: var(--muted); font-size: 22px; cursor:pointer; line-height:1; padding: 2px 6px; }
+  .close-x:hover{ color: var(--paper); }
+
+  .field{ margin-bottom: 12px; }
+  .field label{ display:block; font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .field input, .field textarea, .field select{
+    width:100%; background: var(--blueprint); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 10px; color: var(--paper); font-family:'IBM Plex Sans', sans-serif; font-size: 14px;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline: none; border-color: var(--cyan); }
+  .field-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{ display:flex; align-items:flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .checklist li:last-child{ border-bottom:none; }
+  .checklist input[type=checkbox]{ width:19px; height:19px; margin-top:1px; accent-color: var(--cyan); flex-shrink:0; }
+  .checklist label{ cursor:pointer; }
+  .checklist li.checked label{ color: var(--muted); text-decoration: line-through; }
+
+  .save-row{ display:flex; justify-content:space-between; align-items:center; margin-top: 16px; gap: 10px; }
+  .save-btn{
+    background: var(--cyan); color: #052026; border: none; border-radius: 6px; padding: 10px 18px;
+    font-family:'Oswald', sans-serif; font-weight:600; text-transform: uppercase; letter-spacing:0.04em; font-size: 13px; cursor:pointer;
+  }
+  .save-msg{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--green-on); opacity:0; transition: opacity 0.2s ease; }
+  .save-msg.show{ opacity:1; }
+
+  .contact-row{ display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .contact-row:last-child{ border-bottom:none; }
+  .contact-name{ font-size: 13px; color: var(--muted); }
+  .tel-link{ color: var(--cyan); text-decoration:none; font-family:'IBM Plex Mono', monospace; font-size: 14px; }
+
+  .sev-tag{
+    display:inline-block; font-family:'IBM Plex Mono', monospace; font-size: 10px; letter-spacing:0.05em;
+    padding: 2px 7px; border-radius: 4px; text-transform:uppercase; margin-right:6px;
+  }
+  .sev-safety{ background: rgba(224,82,82,0.18); color: var(--red); }
+  .sev-major{ background: rgba(224,167,51,0.18); color: var(--amber); }
+  .sev-minor{ background: rgba(79,209,232,0.15); color: var(--cyan); }
+  .sev-cosmetic{ background: rgba(124,147,166,0.18); color: var(--muted); }
+
+  .note{ font-size: 11.5px; color: var(--muted); margin-top: 14px; line-height: 1.5; border-top: 1px dashed var(--line); padding-top: 12px; }
+
+  @media (max-width: 420px){
+    .grid{ grid-template-columns: 1fr 1fr; }
+    .field-row{ grid-template-columns: 1fr; }
+  }
+
+  .brand-card{
+    margin-top:18px; padding:14px 16px; border:1px solid var(--line);
+    border-radius:8px; background:rgba(28,50,71,.72);
+  }
+  .brand-name{font-family:'Oswald',sans-serif;font-size:18px;text-transform:uppercase;color:var(--cyan);}
+  .brand-role{font-size:12px;color:var(--muted);margin-top:3px;}
+  .brand-contact{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7;}
+  .brand-contact a{color:var(--cyan);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="dash">
+    <div>
+      <p class="dash-title">Trucker Toolkit</p>
+      <p class="dash-sub" id="today">—</p>
+    </div>
+    <div class="status-light"><span class="dot"></span> READY</div>
+  </div>
+
+  <div class="brand-card">
+    <div class="brand-name">Ron Launsby</div>
+    <div class="brand-role">Missouri Licensed Life Insurance Agent</div>
+    <div class="brand-contact">
+      <div>📞 <a href="tel:8323538289">832-353-8289</a></div>
+      <div>✉ <a href="mailto:Rlaunsby.sfg@gmail.com">Rlaunsby.sfg@gmail.com</a></div>
+      <div>📅 <a href="https://calendly.com/rlaunsby-sfg" target="_blank" rel="noopener">Schedule a conversation</a></div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="note">Data you enter is saved to this browser only — nothing is shared. Checklists are based on InterNACHI's general Standards of Practice as a starting point; adjust to match your state licensing requirements and your own SOP.</p>
+</div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const TOOLS = [
+  { id:"driver", label:"Driver Info", type:"driver", desc:"Keep your basic driver and business information handy" },
+  { id:"trip", label:"Trip Log", type:"trip", desc:"Track trips, miles, fuel and notes" },
+  { id:"expenses", label:"Business Expenses", type:"deductions", desc:"Log business expenses for your tax preparer" },
+  { id:"maintenance", label:"Maintenance Log", type:"maintenance", desc:"Track service, repairs and upcoming maintenance" },
+  { id:"contacts", label:"Save Contact", type:"contacts", desc:"Add a contact & save it to your phone" },
+  { id:"financial", label:"Financial Checkup", type:"financial", desc:"Questions to help you review your business and retirement picture" },
+  { id:"documents", label:"Important Docs", type:"documents", desc:"Keep reminders for licenses, insurance and other documents" },
+  { id:"notes", label:"Quick Notes", type:"notes", desc:"Save reminders and questions for later" },
+];
+
+const CHECKLISTS = {};
+
+let STATE = {};
+
+function downloadVcard(c){
+  const org = c.company || c.category;
+  const vcf = [
+    'BEGIN:VCARD','VERSION:3.0',
+    `FN:${c.name}`,`ORG:${org}`,`TEL;TYPE=CELL:${c.phone}`,`NOTE:${c.category}`,
+    'END:VCARD'
+  ].join('\r\n');
+  const blob = new Blob([vcf], { type: 'text/vcard' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${c.name.replace(/[^a-z0-9]/gi,'_')}.vcf`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric', year:'numeric' }).toUpperCase();
+}
+document.getElementById('today').textContent = todayStr();
+
+async function loadAll(){
+  for (const t of TOOLS){
+    try{
+      const r = await window.storage.get('trucker:' + t.id);
+      STATE[t.id] = r ? JSON.parse(r.value) : {};
+    }catch(e){ STATE[t.id] = {}; }
+  }
+  render();
+}
+
+async function save(id){
+  try{ await window.storage.set('trucker:' + id, JSON.stringify(STATE[id])); }
+  catch(e){ console.error('save failed', e); }
+}
+
+function hasData(id){
+  const s = STATE[id];
+  if (!s) return false;
+  return Object.keys(s).some(k => {
+    const v = s[k];
+    if (typeof v === 'boolean') return v === true;
+    if (Array.isArray(v)) return v.length > 0;
+    if (v && typeof v === 'object') return Object.keys(v).length > 0;
+    return v && String(v).trim() !== '';
+  });
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  TOOLS.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn' + (hasData(t.id) ? ' has-data' : '');
+    btn.innerHTML = `<div><span class="idx">0${i+1}</span></div><div class="glow"></div><div class="label">${t.label}</div>`;
+    btn.onclick = () => openTool(t);
+    grid.appendChild(btn);
+  });
+}
+
+function closeSheet(){ document.getElementById('overlay').classList.remove('open'); }
+
+function flashSave(){
+  const msg = document.getElementById('saveMsg');
+  if (!msg) return;
+  msg.classList.add('show');
+  setTimeout(()=> msg.classList.remove('show'), 1400);
+}
+
+function openTool(t){
+  const sheet = document.getElementById('sheet');
+  const d = STATE[t.id] || {};
+  let body = '';
+
+  if (t.type === 'driver'){
+    body = `
+      <div class="field"><label>Name</label><input id="f_name" value="${d.name||''}"></div>
+      <div class="field-row">
+        <div class="field"><label>Phone</label><input id="f_phone" type="tel" value="${d.phone||''}"></div>
+        <div class="field"><label>Email</label><input id="f_email" type="email" value="${d.email||''}"></div>
+      </div>
+      <div class="field"><label>Trucking company</label><input id="f_company" value="${d.company||''}"></div>
+      <div class="field-row">
+        <div class="field"><label>Driver type</label><select id="f_type">
+          <option ${d.type==='Owner-Operator'?'selected':''}>Owner-Operator</option>
+          <option ${d.type==='Independent Contractor'?'selected':''}>Independent Contractor</option>
+          <option ${d.type==='Small Fleet Owner'?'selected':''}>Small Fleet Owner</option>
+          <option ${d.type==='Company Driver'?'selected':''}>Company Driver</option>
+          <option ${d.type==='Other'?'selected':''}>Other</option>
+        </select></div>
+        <div class="field"><label>State</label><input id="f_state" value="${d.state||''}"></div>
+      </div>
+      <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
+  }
+  else if (t.type === 'trip'){
+    d.list=d.list||[];
+    const list=d.list.slice().reverse().map(x=>`
+      <div class="contact-row"><div>
+        <div class="contact-name">${x.date||'No date'} · ${x.route||'Trip'}</div>
+        <div style="font-size:14px;">${x.miles||0} miles${x.fuel?' · $'+x.fuel+' fuel':''}</div>
+        <div style="font-size:12px;color:var(--muted);">${x.note||''}</div>
+      </div><button class="close-x" data-del="${x.id}">&times;</button></div>
+    `).join('') || `<p style="color:var(--muted);font-size:13px;">No trips logged yet.</p>`;
+    body=`
+      <div class="field-row"><div class="field"><label>Date</label><input id="f_date" type="date"></div>
+      <div class="field"><label>Miles</label><input id="f_miles" type="number" placeholder="0"></div></div>
+      <div class="field"><label>Route / trip</label><input id="f_route" placeholder="e.g. Joplin MO → Dallas TX"></div>
+      <div class="field-row"><div class="field"><label>Fuel cost</label><input id="f_fuel" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Notes</label><input id="f_note" placeholder="Load, customer, etc."></div></div>
+      <div class="save-row"><button class="save-btn" id="addBtn">Add trip</button><span class="save-msg" id="saveMsg">Saved</span></div>
+      <div class="note">Trips logged: ${d.list.length}</div><div>${list}</div>`;
+  }
+  else if (t.type === 'maintenance'){
+    d.list=d.list||[];
+    const list=d.list.slice().reverse().map(x=>`
+      <div class="contact-row"><div>
+        <div class="contact-name">${x.date||'No date'} · ${x.item||'Maintenance'}</div>
+        <div style="font-size:14px;">${x.miles?x.miles+' miles · ':''}$${x.cost||'0.00'}</div>
+        <div style="font-size:12px;color:var(--muted);">${x.note||''}</div>
+      </div><button class="close-x" data-del="${x.id}">&times;</button></div>
+    `).join('') || `<p style="color:var(--muted);font-size:13px;">No maintenance logged yet.</p>`;
+    body=`
+      <div class="field-row"><div class="field"><label>Date</label><input id="f_date" type="date"></div>
+      <div class="field"><label>Odometer</label><input id="f_miles" type="number" placeholder="0"></div></div>
+      <div class="field"><label>Service / repair</label><input id="f_item" placeholder="Oil change, tires, brakes..."></div>
+      <div class="field-row"><div class="field"><label>Cost</label><input id="f_cost" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Notes</label><input id="f_note" placeholder="Next service due..."></div></div>
+      <div class="save-row"><button class="save-btn" id="addBtn">Add service</button><span class="save-msg" id="saveMsg">Saved</span></div>
+      <div class="note">Services logged: ${d.list.length}</div><div>${list}</div>`;
+  }
+  else if (t.type === 'financial'){
+    body=`
+      <p style="font-size:14px;line-height:1.55;">Use these questions as a starting point for a personal financial conversation. This is not tax or investment advice.</p>
+      <ul class="checklist">
+        ${["If I couldn't drive for several months, how would my family/business be affected?",
+           "Do I have a plan for replacing income when I stop driving?",
+           "How much am I currently saving for retirement?",
+           "Is my family financially protected if something happens to me?",
+           "Do I have a written plan for my trucking business if I retire or can't work?"].map((x,i)=>`
+          <li><input type="checkbox" id="q${i}" ${d['q'+i]?'checked':''}><label for="q${i}">${x}</label></li>`).join('')}
+      </ul>
+      <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
+  }
+  else if (t.type === 'documents'){
+    body=`
+      <div class="field"><label>CDL / license notes</label><input id="f_cdl" value="${d.cdl||''}"></div>
+      <div class="field"><label>Commercial insurance notes</label><textarea id="f_ins" rows="2">${d.ins||''}</textarea></div>
+      <div class="field"><label>IFTA / tax documents</label><textarea id="f_tax" rows="2">${d.tax||''}</textarea></div>
+      <div class="field"><label>Other important documents</label><textarea id="f_other" rows="2">${d.other||''}</textarea></div>
+      <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
+  }
+  else if (t.type === 'notes'){
+    body=`
+      <div class="field"><label>Quick notes</label><textarea id="f_notes" rows="8" placeholder="Questions, reminders, things to discuss...">${d.notes||''}</textarea></div>
+      <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
+  }
+  else if (t.type === 'contacts'){
+    d.list=d.list||[];
+    const cats=['Tax preparer / bookkeeper','Dispatcher','Broker','Customer','Mechanic','Insurance','Other'];
+    const list=d.list.map(c=>`<div class="contact-row"><div><div class="contact-name">${c.category}${c.company?' · '+c.company:''}</div><div style="font-size:14px;">${c.name}</div><a class="tel-link" href="tel:${c.phone.replace(/[^0-9+]/g,'')}">${c.phone}</a></div><button class="close-x" data-del="${c.id}">&times;</button></div>`).join('') || `<p style="color:var(--muted);font-size:13px;">No contacts saved yet.</p>`;
+    body=`
+      <div class="field"><label>Name</label><input id="f_newname"></div>
+      <div class="field-row"><div class="field"><label>Phone</label><input id="f_newphone" type="tel"></div>
+      <div class="field"><label>Category</label><select id="f_newcat">${cats.map(x=>`<option>${x}</option>`).join('')}</select></div></div>
+      <div class="field"><label>Company</label><input id="f_newcompany"></div>
+      <div class="save-row"><button class="save-btn" id="addBtn">Save Contact</button><span class="save-msg" id="saveMsg">Saved</span></div>
+      <div class="note">Saved contacts</div><div>${list}</div>`;
+  }
+  else if (t.type === 'deductions'){
+    const cats=['Fuel','Repairs / maintenance','Tires','Truck payment / lease','Insurance','Tolls / parking','Meals','Permits / licenses','Phone / internet','Office / software','Other'];
+    d.list=d.list||[];
+    const total=d.list.reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    const list=d.list.slice().reverse().map(e=>`<div class="contact-row"><div><div class="contact-name">${e.date||'No date'} · ${e.category}</div><div style="font-size:14px;">$${(parseFloat(e.amount)||0).toFixed(2)}${e.note?' — '+e.note:''}</div></div><button class="close-x" data-del="${e.id}">&times;</button></div>`).join('') || `<p style="color:var(--muted);font-size:13px;">No expenses logged yet.</p>`;
+    body=`
+      <div class="field-row"><div class="field"><label>Date</label><input id="f_newdate" type="date"></div><div class="field"><label>Amount</label><input id="f_newamount" type="number" step="0.01"></div></div>
+      <div class="field"><label>Category</label><select id="f_newcat">${cats.map(x=>`<option>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>Note</label><input id="f_newnote"></div>
+      <div class="save-row"><button class="save-btn" id="addBtn">Add expense</button><span class="save-msg" id="saveMsg">Saved</span></div>
+      <div class="note">Total logged: <span style="color:var(--cyan);">$${total.toFixed(2)}</span></div><div>${list}</div>
+      <p class="note">Running log only—not tax advice. Keep your receipts and give them to your tax preparer.</p>`;
+  }
+
+  sheet.innerHTML=`<div class="sheet-head"><div><p class="sheet-title">${t.label}</p><p class="sheet-desc">${t.desc}</p></div><button class="close-x" id="closeBtn">&times;</button></div>${body}`;
+  document.getElementById('closeBtn').onclick=closeSheet;
+  document.getElementById('overlay').classList.add('open');
+
+  if(t.type==='financial'){
+    document.querySelectorAll('.checklist input').forEach(cb=>cb.onchange=()=>{d[cb.id]=cb.checked;});
+  }
+
+  const saveBtn=document.getElementById('saveBtn');
+  if(saveBtn) saveBtn.onclick=async()=>{
+    sheet.querySelectorAll('input,textarea,select').forEach(inp=>{d[inp.id.replace('f_','')]=inp.value;});
+    if(t.type==='financial') document.querySelectorAll('.checklist input').forEach(cb=>d[cb.id]=cb.checked);
+    STATE[t.id]=d; await save(t.id); flashSave(); render();
+  };
+
+  const addBtn=document.getElementById('addBtn');
+  if(addBtn) addBtn.onclick=async()=>{
+    d.list=d.list||[];
+    if(t.type==='trip') d.list.push({id:Date.now().toString(),date:f_date.value,miles:f_miles.value,route:f_route.value,fuel:f_fuel.value,note:f_note.value});
+    if(t.type==='maintenance') d.list.push({id:Date.now().toString(),date:f_date.value,miles:f_miles.value,item:f_item.value,cost:f_cost.value,note:f_note.value});
+    if(t.type==='contacts'){
+      if(!f_newname.value||!f_newphone.value){alert('Enter a name and phone number.');return;}
+      d.list.push({id:Date.now().toString(),name:f_newname.value,phone:f_newphone.value,category:f_newcat.value,company:f_newcompany.value});
+    }
+    if(t.type==='deductions'){
+      if(!f_newamount.value||parseFloat(f_newamount.value)<=0){alert('Enter an amount.');return;}
+      d.list.push({id:Date.now().toString(),date:f_newdate.value,amount:f_newamount.value,category:f_newcat.value,note:f_newnote.value});
+    }
+    STATE[t.id]=d; await save(t.id); flashSave(); openTool(t); render();
+  };
+
+  sheet.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{
+    d.list=(d.list||[]).filter(x=>x.id!==btn.dataset.del); STATE[t.id]=d; await save(t.id); openTool(t); render();
+  });
+}
+
+loadAll();
+</script>
+
+</body>
+</html>
