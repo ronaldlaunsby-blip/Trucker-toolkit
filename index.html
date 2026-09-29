@@ -227,9 +227,12 @@ async function loadAll(){
   render();
 }
 
-async function save(id){
-  try{ await window.storage.set('trucker:' + id, JSON.stringify(STATE[id])); }
-  catch(e){ console.error('save failed', e); }
+function save(id){
+  try{
+    localStorage.setItem('trucker:' + id, JSON.stringify(STATE[id]));
+  } catch(e){
+    console.error('save failed', e);
+  }
 }
 
 function hasData(id){
