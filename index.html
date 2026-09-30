@@ -217,12 +217,14 @@ function todayStr(){
 }
 document.getElementById('today').textContent = todayStr();
 
-async function loadAll(){
+function loadAll(){
   for (const t of TOOLS){
     try{
-      const r = await window.storage.get('trucker:' + t.id);
-      STATE[t.id] = r ? JSON.parse(r.value) : {};
-    }catch(e){ STATE[t.id] = {}; }
+      const r = localStorage.getItem('trucker:' + t.id);
+      STATE[t.id] = r ? JSON.parse(r) : {};
+    }catch(e){
+      STATE[t.id] = {};
+    }
   }
   render();
 }
