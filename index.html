@@ -345,9 +345,10 @@ else if (t.type === 'financial'){
 </ul>      
       <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
   }
+  
   else if (t.type === 'family'){
     body=`
-      <p style="font-size:14px;line-height:1.55;">A little planning today can help protect the people who depend on you. Use this checklist to review your family's financial protection. Checking a box does not mean you need to buy insurance.</p>
+      <p style="font-size:14px;line-height:1.55;">Review your family's financial protection. This educational estimate is a starting point, not financial advice.</p>
       <ul class="checklist">
         ${["Do I know how much life insurance I currently have?",
            "Would my coverage help pay off the mortgage or rent?",
@@ -357,9 +358,21 @@ else if (t.type === 'financial'){
            "Does my family know where to find my policy and important documents?"].map((x,i)=>`
           <li><input type="checkbox" id="family${i}" ${d['family'+i]?'checked':''}><label for="family${i}">${x}</label></li>`).join('')}
       </ul>
-      <p style="font-size:14px;line-height:1.55;">Want help reviewing your options? You can request a no-obligation overview.</p>
+      <hr>
+      <h3>Life Insurance Coverage Calculator</h3>
+      <p style="font-size:14px;line-height:1.55;">Enter estimates below. Include only savings you expect would be available to your family.</p>
+      <div class="field"><label>Annual family income to replace ($)</label><input id="f_annualIncome" type="number" min="0" value="${d.annualIncome||''}" placeholder="50000"></div>
+      <div class="field"><label>Years of income replacement</label><input id="f_incomeYears" type="number" min="0" value="${d.incomeYears||''}" placeholder="5"></div>
+      <div class="field"><label>Mortgage and other debts ($)</label><input id="f_debts" type="number" min="0" value="${d.debts||''}" placeholder="200000"></div>
+      <div class="field"><label>Other family needs ($)</label><input id="f_otherNeeds" type="number" min="0" value="${d.otherNeeds||''}" placeholder="25000"></div>
+      <div class="field"><label>Existing life insurance ($)</label><input id="f_existingInsurance" type="number" min="0" value="${d.existingInsurance||''}" placeholder="100000"></div>
+      <div class="field"><label>Savings available to family ($)</label><input id="f_savings" type="number" min="0" value="${d.savings||''}" placeholder="10000"></div>
+      <button class="save-btn" id="calcBtn">Calculate Coverage Gap</button>
+      <div id="coverageResult" style="margin-top:14px;font-size:16px;line-height:1.6;" aria-live="polite"></div>
+      <p style="font-size:12px;line-height:1.5;">This is a rough estimate, not a policy recommendation. Actual needs vary by family, benefits, taxes, and other resources.</p>
       <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
-  }    
+  }
+
   else if (t.type === 'documents'){
     body=`
       <div class="field"><label>CDL / license notes</label><input id="f_cdl" value="${d.cdl||''}"></div>
@@ -399,9 +412,36 @@ else if (t.type === 'financial'){
       <p class="note">Running log only—not tax advice. Keep your receipts and give them to your tax preparer.</p>`;
   }
 
-  sheet.innerHTML=`<div class="sheet-head"><div><p class="sheet-title">${t.label}</p><p class="sheet-desc">${t.desc}</p></div><button class="close-x" id="closeBtn">&times;</button></div>${body}`;
+sheet.innerHTML=`<div class="  sheet-head"><div><p class="sheet-title">${t.label}</p><p class="sheet-desc">${t.desc}</p></div><button class="close-x" id="closeBtn">&times;</button></div>${body}`;
   document.getElementById('closeBtn').onclick=closeSheet;
   document.getElementById('overlay').classList.add('open');
+  if(t.type==='family'){
+    const calcBtn=document.getElementById('calcBtn');
+    if(calcBtn) calcBtn.onclick=()=>{
+      const num=id=>Math.max(0,Number(document.getElementById(id).value)||0);
+      const income=num('f_annualIncome');
+      const years=num('f_incomeYears');
+      const debts=num('f_debts');
+      const other=num('f_otherNeeds');
+      const insurance=num('f_existingInsurance');
+      const savings=num('f_savings');
+
+      const estimatedNeed=income*years+debts+other;
+      const resources=insurance+savings;
+      const gap=Math.max(0,estimatedNeed-resources);
+      const money=n=>n.toLocaleString('en-US',{
+        style:'currency',
+        currency:'USD',
+        maximumFractionDigits:0
+      });
+
+      document.getElementById('coverageResult').innerHTML=
+        '<strong>Estimated family need:</strong> '+money(estimatedNeed)+'<br>'+
+        '<strong>Existing insurance and savings:</strong> '+money(resources)+'<br>'+
+        '<strong>Estimated coverage gap:</strong> '+money(gap);
+    };
+  }
+  
 
   if(t.type==='financial'){
     document.querySelectorAll('.checklist input').forEach(cb=>cb.onchange=()=>{d[cb.id]=cb.checked;});
