@@ -188,6 +188,7 @@ const TOOLS = [
   { id:"maintenance", label:"Maintenance Log", type:"maintenance", desc:"Track service, repairs and upcoming maintenance" },
   { id:"contacts", label:"Save Contact", type:"contacts", desc:"Add a contact & save it to your phone" },
   { id:"financial", label:"Financial Checkup", type:"financial", desc:"Questions to help you review your business and retirement picture" },
+  { id:"family", label:"Protect Your Family", type:"family", desc:"Review your life insurance and your family's financial protection" },
   { id:"documents", label:"Important Docs", type:"documents", desc:"Keep reminders for licenses, insurance and other documents" },
   { id:"notes", label:"Quick Notes", type:"notes", desc:"Save reminders and questions for later" },
 ];
@@ -331,7 +332,7 @@ function openTool(t){
       <div class="save-row"><button class="save-btn" id="addBtn">Add service</button><span class="save-msg" id="saveMsg">Saved</span></div>
       <div class="note">Services logged: ${d.list.length}</div><div>${list}</div>`;
   }
-  else if (t.type === 'financial'){
+else if (t.type === 'financial'){
     body=`
       <p style="font-size:14px;line-height:1.55;">Use these questions as a starting point for a personal financial conversation. This is not tax or investment advice.</p>
       <ul class="checklist">
@@ -341,9 +342,24 @@ function openTool(t){
            "Is my family financially protected if something happens to me?",
            "Do I have a written plan for my trucking business if I retire or can't work?"].map((x,i)=>`
           <li><input type="checkbox" id="q${i}" ${d['q'+i]?'checked':''}><label for="q${i}">${x}</label></li>`).join('')}
-      </ul>
+</ul>      
       <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
   }
+  else if (t.type === 'family'){
+    body=`
+      <p style="font-size:14px;line-height:1.55;">A little planning today can help protect the people who depend on you. Use this checklist to review your family's financial protection. Checking a box does not mean you need to buy insurance.</p>
+      <ul class="checklist">
+        ${["Do I know how much life insurance I currently have?",
+           "Would my coverage help pay off the mortgage or rent?",
+           "Could my family cover everyday bills if my income disappeared?",
+           "Do I understand what happens to my employer coverage if I change jobs?",
+           "Have I reviewed whether my family needs additional protection?",
+           "Does my family know where to find my policy and important documents?"].map((x,i)=>`
+          <li><input type="checkbox" id="family${i}" ${d['family'+i]?'checked':''}><label for="family${i}">${x}</label></li>`).join('')}
+      </ul>
+      <p style="font-size:14px;line-height:1.55;">Want help reviewing your options? You can request a no-obligation overview.</p>
+      <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
+  }    
   else if (t.type === 'documents'){
     body=`
       <div class="field"><label>CDL / license notes</label><input id="f_cdl" value="${d.cdl||''}"></div>
@@ -394,7 +410,8 @@ function openTool(t){
   const saveBtn=document.getElementById('saveBtn');
   if(saveBtn) saveBtn.onclick=async()=>{
     sheet.querySelectorAll('input,textarea,select').forEach(inp=>{d[inp.id.replace('f_','')]=inp.value;});
-    if(t.type==='financial') document.querySelectorAll('.checklist input').forEach(cb=>d[cb.id]=cb.checked);
+    if(t.type==='financial'||t.type==='family') document.querySelectorAll('.checklist input').forEach(cb=>d[cb.id]=cb.checked);
+  
     STATE[t.id]=d; await save(t.id); flashSave(); render();
   };
 
