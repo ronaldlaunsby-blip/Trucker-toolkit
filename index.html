@@ -190,12 +190,62 @@ const TOOLS = [
   { id:"maintenance", label:"Maintenance Log", type:"maintenance", desc:"Track service, repairs and upcoming maintenance" },
   { id:"contacts", label:"Save Contact", type:"contacts", desc:"Add a contact & save it to your phone" },
   { id:"financial", label:"Financial Checkup", type:"financial", desc:"Questions to help you review your business and retirement picture" },
-  { id:"family", label:"Protect Your Family", type:"family", desc:"Review your life insurance and your family's financial protection" },
-  { id:"documents", label:"Important Docs", type:"documents", desc:"Keep reminders for licenses, insurance and other documents" },
+{ id:"family", label:"Protect Your Family", type:"family", desc:"Review your life insurance and your family's financial protection" },
+  { id:"documents", label:"Important Docs",   type:"documents", desc:"Keep reminders for licenses, insurance and other documents" },
   { id:"notes", label:"Quick Notes", type:"notes", desc:"Save reminders and questions for later" },
+    { id:"doccheck", label:"Truck Driver Document Checklist", type:"doccheck", desc:"Check important road, business and family documents" },
 ];
 
-const CHECKLISTS = {};
+
+const CHECKLISTS = {
+  doccheck: [
+    {
+      title: "Roadside Readiness",
+      items: [
+        "Valid CDL or driver's license",
+        "Medical certificate or exemption, if required",
+        "Truck and trailer registration",
+        "Proof of insurance",
+        "Required permits for this trip",
+        "Current hours-of-service records",
+        "Bills of lading and shipping papers",
+        "Required inspection documents"
+      ]
+    },
+    {
+      title: "ELD & Hours of Service",
+      items: [
+        "ELD user manual or instructions",
+        "ELD data transfer instructions",
+        "ELD malfunction instructions",
+        "Blank paper log forms for ELD backup, if required"
+      ]
+    },
+    {
+      title: "Owner-Operator Business Records",
+      items: [
+        "Business registration and tax information, if applicable",
+        "Operating authority and permits, if applicable",
+        "Commercial insurance documents",
+        "Fuel and repair receipts",
+        "Tire, toll and other business receipts",
+        "Mileage, trip and income records",
+        "Tax forms and settlement statements"
+      ]
+    },
+    {
+      title: "Family Emergency File",
+      items: [
+        "Emergency contact list",
+        "Employer or business contact information",
+        "Health insurance information",
+        "Life insurance policy and beneficiary information",
+        "Location of important financial and legal documents"
+      ]
+    }
+  ]
+};
+
 
 let STATE = {};
 
@@ -380,6 +430,38 @@ else if (t.type === 'financial'){
 
       <div class="save-row"><button class="save-btn" id="saveBtn">Save</button><span class="save-msg" id="saveMsg">Saved</span></div>`;
   }
+    
+
+  else if (t.type === 'doccheck'){
+    const sections = CHECKLISTS.doccheck;
+    const total = sections.reduce((n,s)=>n+s.items.length,0);
+    const checked = sections.reduce((n,s,si)=>n+s.items.filter((x,ii)=>d['dc_'+si+'_'+ii]).length,0);
+
+    body = `
+      <p style="font-size:14px;line-height:1.55;">
+        Use this checklist to organize important documents. Requirements vary by your operation, state and cargo.
+      </p>
+      <p id="doccheckProgress" style="font-weight:bold;">
+        ${checked} of ${total} items checked
+      </p>
+      ${sections.map((section,si)=>`
+        <h3>${section.title}</h3>
+        <ul class="checklist">
+          ${section.items.map((item,ii)=>`
+            <li>
+              <input type="checkbox" id="dc_${si}_${ii}" ${d['dc_'+si+'_'+ii]?'checked':''}>
+              <label for="dc_${si}_${ii}">${item}</label>
+            </li>
+          `).join('')}
+        </ul>
+      `).join('')}
+      <p style="font-size:12px;line-height:1.5;">
+        This checklist is an organizing aid, not an official compliance certification.
+      </p>
+      <div class="save-row">
+        <button class="save-btn" id="resetDoccheckBtn" type="button">Reset Checklist</button>
+      </div>`;
+  }
 
   else if (t.type === 'documents'){
     body=`
@@ -453,6 +535,35 @@ sheet.innerHTML=`<div class="  sheet-head"><div><p class="sheet-title">${t.label
 
   if(t.type==='financial'){
     document.querySelectorAll('.checklist input').forEach(cb=>cb.onchange=()=>{d[cb.id]=cb.checked;});
+  }
+
+  if(t.type==='doccheck'){
+    const updateProgress=()=>{
+      const boxes=sheet.querySelectorAll('input[id^="dc_"]');
+      const checked=[...boxes].filter(cb=>cb.checked).length;
+      const progress=document.getElementById('doccheckProgress');
+      if(progress) progress.textContent=checked+' of '+boxes.length+' items checked';
+    };
+
+    sheet.querySelectorAll('input[id^="dc_"]').forEach(cb=>{
+      cb.onchange=async()=>{
+        d[cb.id]=cb.checked;
+        STATE[t.id]=d;
+        await save(t.id);
+        updateProgress();
+      };
+    });
+
+    const resetBtn=document.getElementById('resetDoccheckBtn');
+    if(resetBtn) resetBtn.onclick=async()=>{
+      sheet.querySelectorAll('input[id^="dc_"]').forEach(cb=>{
+        cb.checked=false;
+        d[cb.id]=false;
+      });
+      STATE[t.id]=d;
+      await save(t.id);
+      updateProgress();
+    };
   }
 
   const saveBtn=document.getElementById('saveBtn');
